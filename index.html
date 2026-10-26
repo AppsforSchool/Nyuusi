@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PDF一括ダウンロード</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="card">
+  <h1>PDF一括ダウンロード</h1>
+  <p class="target">対象：<span id="target"></span></p>
+
+  <div id="status" class="status info" role="status" aria-live="polite">読み込み中…</div>
+  <div id="progress-wrap" class="progress-wrap" hidden>
+    <progress id="progress" value="0" max="100"></progress>
+    <span id="progress-text"></span>
+  </div>
+
+  <p class="count">PDF件数：<strong id="count">-</strong> 件<span id="total"></span></p>
+
+  <div class="actions">
+    <button id="download" type="button" disabled>ZIPをダウンロード</button>
+    <button id="reload" type="button" class="secondary">一覧を再読み込み</button>
+  </div>
+
+  <ul id="list" class="list"></ul>
+
+  <p class="footer"><a id="repo-link" href="#" target="_blank" rel="noopener">GitHubリポジトリを開く</a></p>
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
