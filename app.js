@@ -40,7 +40,11 @@ function setProgress(done, total, label) {
   el.progress.value = done;
   el.ptext.textContent = label || (done + " / " + total);
 }
-function hideProgress() { el.pw.hidden = true; }
+function hideProgress() {
+  el.pw.hidden = true;
+  el.progress.value = 0;
+  el.ptext.textContent = "";
+}
 function setBusy(b) {
   busy = b;
   el.download.disabled = b || getFiltered().length === 0;

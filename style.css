@@ -26,6 +26,7 @@ h1 { margin: 0 0 4px; font-size: 1.5rem; }
 .status.ok { background: var(--ok-bg); }
 .status.warn { background: var(--warn-bg); }
 .status.error { background: var(--err-bg); }
+.progress-wrap[hidden] { display: none; }
 .progress-wrap { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 progress { flex: 1; height: 14px; }
 #progress-text { font-size: .85rem; color: var(--muted); min-width: 5em; text-align: right; }
