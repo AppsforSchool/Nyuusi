@@ -1,19 +1,19 @@
 :root {
   --bg: #f3f5f9; --card: #fff; --text: #1d2433; --muted: #5b6475; --line: #dde2ec;
-  --primary: #1f6feb; --primary-d: #1859bf;
+  --primary: #1f6feb; 
   --info-bg: #eaf2ff; --ok-bg: #e6f6ea; --warn-bg: #fff6e0; --err-bg: #fdeaea;
 }
 @media (prefers-color-scheme: dark) {
   :root {
     --bg: #12151c; --card: #1b2029; --text: #e8ebf2; --muted: #9aa3b5; --line: #2d3442;
-    --primary: #4c8dff; --primary-d: #3a78e6;
+    --primary: #4c8dff; 
     --info-bg: #1b2a44; --ok-bg: #1a3322; --warn-bg: #3a3118; --err-bg: #3d2020;
   }
 }
 * { box-sizing: border-box; }
 body {
   margin: 0; padding: 16px; background: var(--bg); color: var(--text);
-  font-family: system-ui, -apple-system, "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif; line-height: 1.6;
+  font-family: "BIZ UDGothic", "Hiragino Sans", "Yu Gothic", Meiryo, sans-serif; line-height: 1.6;
 }
 .card {
   max-width: 760px; margin: 0 auto; padding: 24px; background: var(--card);
@@ -33,10 +33,11 @@ progress { flex: 1; height: 14px; }
 .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
 button {
   font: inherit; padding: 12px 20px; border: 0; border-radius: 8px; cursor: pointer;
-  background: var(--primary); color: #fff; font-weight: 600; min-height: 44px;
+  background: var(--primary); color: #fff; font-weight: 700; min-height: 44px;
+  -webkit-tap-highlight-color: transparent;
 }
-button:hover:not(:disabled) { background: var(--primary-d); }
 button.secondary { background: transparent; color: var(--primary); border: 1px solid var(--primary); }
+button:active:not(:disabled) { opacity: .8; }
 button:disabled { opacity: .5; cursor: not-allowed; }
 .list { list-style: none; margin: 0; padding: 0; max-height: 50vh; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; }
 .list:empty { display: none; }
@@ -51,3 +52,10 @@ a { color: var(--primary); }
   .card { padding: 16px; }
   .actions button { flex: 1 1 100%; }
 }
+.filters { display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 8px; }
+.filters label { display: flex; flex-direction: column; gap: 4px; font-size: .85rem; color: var(--muted); flex: 1 1 180px; }
+select {
+  font: inherit; color: var(--text); background: var(--card); min-height: 44px;
+  padding: 8px 10px; border: 1px solid var(--line); border-radius: 8px;
+}
+select:disabled { opacity: .5; }

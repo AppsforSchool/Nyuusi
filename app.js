@@ -11,13 +11,18 @@ const CONFIG = {
   concurrency: 4           // 同時ダウンロード数
 };
 
+/* 絞り込み用の定義（ファイル名に含まれる文字列） */
+const SUBJECTS = [["kokugo", "国語"], ["suugaku", "数学"], ["rika", "理科"], ["eigo", "英語"], ["syakai", "社会"]];
+const YEARS = [["R8", 2026], ["R7", 2025], ["R6", 2024], ["R5", 2023], ["R4", 2022], ["R3", 2021], ["R2", 2020],
+  ["H31", 2019], ["H30", 2018], ["H29", 2017], ["H28", 2016], ["H27", 2015], ["H26", 2014]];
+
 const API = "https://api.github.com";
 const $ = (id) => document.getElementById(id);
 const el = {
   target: $("target"), status: $("status"), count: $("count"), total: $("total"),
   list: $("list"), download: $("download"), reload: $("reload"),
   pw: $("progress-wrap"), progress: $("progress"), ptext: $("progress-text"),
-  link: $("repo-link")
+  link: $("repo-link"), subject: $("subject"), year: $("year")
 };
 
 let files = [];      // { path, size }
@@ -38,8 +43,42 @@ function setProgress(done, total, label) {
 function hideProgress() { el.pw.hidden = true; }
 function setBusy(b) {
   busy = b;
-  el.download.disabled = b || files.length === 0;
+  el.download.disabled = b || getFiltered().length === 0;
   el.reload.disabled = b;
+  el.subject.disabled = b;
+  el.year.disabled = b;
+}
+
+/* ===== 絞り込み ===== */
+function baseName(path) { return path.slice(path.lastIndexOf("/") + 1); }
+function fileSubject(path) {
+  const n = baseName(path).toLowerCase();
+  const hit = SUBJECTS.find(([k]) => n.includes(k));
+  return hit ? hit[0] : null;
+}
+function fileYear(path) {
+  const tokens = baseName(path).toUpperCase().match(/[RH]\d+/g) || [];
+  const hit = tokens.find((t) => YEARS.some(([k]) => k === t));
+  return hit || null;
+}
+function getFiltered() {
+  const sub = el.subject.value, yr = el.year.value;
+  return files.filter((f) => (!sub || fileSubject(f.path) === sub) && (!yr || fileYear(f.path) === yr));
+}
+function initFilters() {
+  for (const [k, label] of SUBJECTS) el.subject.add(new Option(label + "（" + k + "）", k));
+  for (const [k, y] of YEARS) el.year.add(new Option(k + "（" + y + "）年度", k));
+}
+function zipFileName() {
+  const parts = [el.year.value, el.subject.value].filter(Boolean);
+  return parts.length ? CONFIG.zipName.replace(/\.zip$/, "") + "_" + parts.join("_") + ".zip" : CONFIG.zipName;
+}
+function onFilterChange() {
+  renderList();
+  if (files.length === 0) return;
+  const n = getFiltered().length;
+  if (n === 0) setStatus("選択した条件に一致するPDFがありません。", "warn");
+  else setStatus("PDFを " + n + " 件表示しています（全 " + files.length + " 件中）。", "ok");
 }
 function formatSize(n) {
   if (n == null) return "-";
@@ -113,7 +152,8 @@ async function listViaContents(br, dir, out) {
 function renderList(failedPaths) {
   el.list.textContent = "";
   const failed = new Set(failedPaths || []);
-  for (const f of files) {
+  const shown = getFiltered();
+  for (const f of shown) {
     const li = document.createElement("li");
     if (failed.has(f.path)) li.className = "failed";
     const n = document.createElement("span");
@@ -125,9 +165,12 @@ function renderList(failedPaths) {
     li.append(n, s);
     el.list.appendChild(li);
   }
-  el.count.textContent = String(files.length);
-  const sum = files.reduce((a, f) => a + (f.size || 0), 0);
-  el.total.textContent = files.length ? "（合計 " + formatSize(sum) + "）" : "";
+  el.count.textContent = shown.length === files.length ? String(files.length) : shown.length + " / " + files.length;
+  const sum = shown.reduce((a, f) => a + (f.size || 0), 0);
+  el.total.textContent = shown.length ? "（合計 " + formatSize(sum) + "）" : "";
+  el.download.textContent = shown.length && shown.length !== files.length
+    ? "絞り込み結果をZIPでダウンロード（" + shown.length + "件）" : "ZIPをダウンロード";
+  el.download.disabled = busy || shown.length === 0;
 }
 
 async function loadList() {
@@ -176,7 +219,8 @@ async function fetchPdf(path) {
 }
 
 async function downloadZip() {
-  if (busy || files.length === 0) return;
+  const targets = getFiltered();
+  if (busy || targets.length === 0) return;
   if (typeof JSZip === "undefined") {
     setStatus("ZIPライブラリ(JSZip)を読み込めませんでした。ネットワークを確認してページを再読み込みしてください。", "error");
     return;
@@ -186,11 +230,11 @@ async function downloadZip() {
   const failed = [];
   let done = 0, next = 0;
   setStatus("PDFを取得しています…", "info");
-  setProgress(0, files.length);
+  setProgress(0, targets.length);
 
   async function worker() {
-    while (next < files.length) {
-      const f = files[next++];
+    while (next < targets.length) {
+      const f = targets[next++];
       try {
         const buf = await fetchPdf(f.path);
         const name = CONFIG.keepRootFolder ? f.path : f.path.slice(CONFIG.folder.length + 1);
@@ -199,14 +243,14 @@ async function downloadZip() {
         failed.push({ path: f.path, reason: e.message });
       }
       done++;
-      setProgress(done, files.length);
+      setProgress(done, targets.length);
     }
   }
 
   try {
-    await Promise.all(Array.from({ length: Math.min(CONFIG.concurrency, files.length) }, worker));
+    await Promise.all(Array.from({ length: Math.min(CONFIG.concurrency, targets.length) }, worker));
 
-    const okCount = files.length - failed.length;
+    const okCount = targets.length - failed.length;
     if (okCount === 0) {
       renderList(failed.map((f) => f.path));
       setStatus("すべてのPDFの取得に失敗しました。ネットワーク接続やリポジトリ設定を確認してください。ZIPは作成していません。", "error");
@@ -238,7 +282,7 @@ async function downloadZip() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = CONFIG.zipName;
+    a.download = zipFileName();
     document.body.appendChild(a);
     a.click();
     a.remove();
@@ -263,4 +307,7 @@ el.target.textContent = CONFIG.owner + "/" + CONFIG.repo + " の " + CONFIG.fold
 el.link.href = "https://github.com/" + CONFIG.owner + "/" + CONFIG.repo;
 el.download.addEventListener("click", downloadZip);
 el.reload.addEventListener("click", loadList);
+el.subject.addEventListener("change", onFilterChange);
+el.year.addEventListener("change", onFilterChange);
+initFilters();
 loadList();
